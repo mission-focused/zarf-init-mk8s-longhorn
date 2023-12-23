@@ -1,0 +1,47 @@
+kind: ZarfInitConfig
+metadata:
+  name: distro-rke2
+  description: Used to establish a new HA RKE2 Zarf cluster
+
+components:
+  # AMD-64 version of the K3s stack
+  - name: mk8s-rke2
+    only:
+      cluster:
+        architecture: amd64
+    files:
+      - source: https://github.com/mission-focused/mk8s/releases/download/v0.0.1/mk8s_v0.0.1_Linux_amd64
+        shasum: d78f97a9e4ed0e20e80273c9200a01dba21a8840700f5c1ce4dd85426ff2e0ba
+        target: /usr/local/bin/mk8s
+        executable: true
+      # rke2 install script
+      - source: rke2/install.sh
+        shasum: d6f0bc6998d93b7e6b5f6b9b2caeb57ef2767abc29578d8803eac0f990ef4c93
+        target: $HOME/artifacts/install.sh
+        executable: true
+      # rke2 binary
+      - source: https://github.com/rancher/rke2/releases/download/v1.28.4%2Brke2r1/rke2.linux-amd64.tar.gz
+        shasum: 08eac708c14d602ee7239e954c4609e3bec87f613d2711c9d0544f9bc06eaa60
+        target: $HOME/artifacts/rke2.linux-amd64.tar.gz
+      # rke2 images
+      - source: https://github.com/rancher/rke2/releases/download/v1.28.4%2Brke2r1/rke2-images.linux-amd64.tar.zst
+        shasum: 2a9d8ec5cf9ef8487ad02f89da535bc50ed319698e0f22c9839044acaeaad5c7
+        target: $HOME/artifacts/rke2-images.linux-amd64.tar.zst
+      # rke2 image checksums
+      - source: https://github.com/rancher/rke2/releases/download/v1.28.4%2Brke2r1/sha256sum-amd64.txt
+        shasum: 27421d69a3c667a595b54d7b193b2eb84ba263bd34afc1f57c8ebfc91d6c1b06
+        target: $HOME/artifacts/sha256sum-amd64.txt
+    actions:
+      onDeploy:
+        before:
+          - cmd: if [ "$(uname -m)" != "x86_64" ]; then echo "this package architecture is amd64, but the target system has a different architecture. These architectures must be the same" && exit 1; fi
+            description: Check that the host architecture matches the package architecture
+            maxRetries: 0
+          - cmd: mkdir -p ~/artifacts
+            description: create the artifacts directory
+        after:
+            # Begin Deployment
+            - cmd: cd $HOME && mk8s install manifest.yaml 
+              description: Begin the installation
+            - cmd: cp $HOME/rke2.yaml ~/.kube/config
+              description: copy the kubeconfig file
