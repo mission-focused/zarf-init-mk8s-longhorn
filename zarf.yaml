@@ -4,9 +4,12 @@ metadata:
   description: Used to establish a new Zarf cluster
 
 components:
-  - name: k3s
+  - name: mk8s
     import:
-      url: oci://ghcr.io/defenseunicorns/packages/init:v0.31.0-skeleton
+      path: mk8s
+    files:
+    - source: manifest.yaml
+      target: $HOME/manifest.yaml
 
   # This package moves the injector & registries binaries
   - name: zarf-injector
